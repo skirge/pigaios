@@ -38,7 +38,7 @@ class ModelicaLexer(RegexLexer):
 
     tokens = {
         'whitespace': [
-            ('[\\s\ufeff]+', Text),
+            (u'[\\s\ufeff]+', Text),
             (r'//[^\n]*\n?', Comment.Single),
             (r'/\*.*?\*/', Comment.Multiline)
         ],

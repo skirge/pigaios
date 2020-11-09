@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python2.7
 
 """
 Pigaios, a tool for matching and diffing source codes directly against binaries.
@@ -18,12 +18,12 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
-
+from __future__ import print_function
 
 import os
 import sys
 import popen2
-import configparser
+import ConfigParser
 
 from exporters.base_support import is_source_file, is_header_file
 
@@ -61,7 +61,7 @@ class CSBDProject:
       print("Project file %s already exists." % repr(project_file))
       return False
 
-    config = configparser.RawConfigParser()
+    config = ConfigParser.RawConfigParser()
     config.optionxform = str
 
     # Add the CLang specific configuration section

@@ -18,7 +18,7 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
-
+from __future__ import print_function
 
 import re
 import os
@@ -31,9 +31,6 @@ import sqlite3
 from idc import *
 from idaapi import *
 from idautils import *
-import ida_kernwin
-import ida_auto
-import ida_ida
 
 from others.tarjan_sort import strongly_connected_components
 
@@ -133,17 +130,17 @@ NOT_FUNCTION_NAMES = ["copyright", "char", "bool", "int", "unsigned", "long",
   "deleting", "removing", "updating", "adding", "assertion", "flags",
   "overflow", "enabled", "disabled", "enable", "disable", "virtual", "client",
   "server", "switch", "while", "offset", "abort", "panic", "static", "updated",
-  "pointer", "reason", "month", "year", "week", "hour", "minute", "second",
+  "pointer", "reason", "month", "year", "week", "hour", "minute", "second", 
   'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday',
   'january', 'february', 'march', 'april', 'may', 'june', 'july', 'august',
-  'september', 'october', 'november', 'december', "arguments", "corrupt",
-  "corrupted", "default", "success", "expecting", "missing", "phrase",
+  'september', 'october', 'november', 'december', "arguments", "corrupt", 
+  "corrupted", "default", "success", "expecting", "missing", "phrase", 
   "unrecognized", "undefined",
   ]
 
 #-------------------------------------------------------------------------------
 def log(msg):
-  ida_kernwin.msg("[%s] %s\n" % (time.asctime(), msg))
+  Message("[%s] %s\n" % (time.asctime(), msg))
 
 #-----------------------------------------------------------------------------
 def basename(path):
@@ -183,7 +180,7 @@ def get_source_strings(min_len = 4, strtypes = [0, 1]):
                 src_langs[key] = 1
 
           for ref in refs:
-            d[full_path].append([ref, get_func_name(ref), str(s)])
+            d[full_path].append([ref, GetFunctionName(ref), str(s)])
 
   return d, src_langs, total_files, strings
 
@@ -211,7 +208,7 @@ def guess_function_names(strings_list):
           func = get_func(ref)
           if func is not None:
             found = True
-            key = func.start_ea
+            key = func.startEA
 
             try:
               rarity[candidate].add(key)
@@ -230,7 +227,7 @@ def guess_function_names(strings_list):
       if len(rarity[candidate]) == 1:
         candidates.add(candidate)
 
-    func_name = get_func_name(key)
+    func_name = GetFunctionName(key)
     tmp = Demangle(func_name, INF_SHORT_DN)
     if tmp is not None:
       func_name = tmp
@@ -260,7 +257,7 @@ def diaphora_decode(ea):
 
 #-------------------------------------------------------------------------------
 def is_conditional_branch_or_jump(ea):
-  mnem = print_insn_mnem(ea)
+  mnem = GetMnem(ea)
   if not mnem or mnem == "":
     return False
 
@@ -283,14 +280,14 @@ def constant_filter(value):
   # no small values
   if value < 0x10000:
     return False
-
+   
   if value & 0xFFFFFF00 == 0xFFFFFF00 or value & 0xFFFF00 == 0xFFFF00 or \
      value & 0xFFFFFFFFFFFFFF00 == 0xFFFFFFFFFFFFFF00 or \
      value & 0xFFFFFFFFFFFF00 == 0xFFFFFFFFFFFF00:
     return False
 
   #no single bits sets - mostly defines / flags
-  for i in range(64):
+  for i in xrange(64):
     if value == (1 << i):
       return False
 
@@ -353,7 +350,7 @@ class CBinaryToSourceExporter:
 
   def create_database(self, sqlite_db = None):
     if sqlite_db is None:
-      sqlite_db = os.path.splitext(get_idb_path())[0] + "-src.sqlite"
+      sqlite_db = os.path.splitext(GetIdbPath())[0] + "-src.sqlite"
 
     if os.path.exists(sqlite_db):
       log("Removing previous database...")
@@ -447,7 +444,7 @@ class CBinaryToSourceExporter:
           if dref in self.names:
             externals.add(self.names[dref])
           else:
-            tmp = get_func_name(dref)
+            tmp = GetFunctionName(dref)
             if not tmp:
               tmp = "0x%x" % dref
             externals.add(tmp)
@@ -472,13 +469,13 @@ class CBinaryToSourceExporter:
         # returned object is not iterable.
         can_iter = False
         switch_cases_values = set()
-        for idx in range(len(results.cases)):
+        for idx in xrange(len(results.cases)):
           cur_case = results.cases[idx]
           if not '__iter__' in dir(cur_case):
             break
 
           can_iter |= True
-          for cidx in range(len(cur_case)):
+          for cidx in xrange(len(cur_case)):
             case_id = cur_case[cidx]
             switch_cases_values.add(case_id)
 
@@ -493,10 +490,10 @@ class CBinaryToSourceExporter:
       return None
 
     # Variables that will be stored in the database
-    func_name = get_func_name(f)
-    prototype = idc.get_type(f)
+    func_name = GetFunctionName(f)
+    prototype = GetType(f)
     if prototype is None:
-      prototype = guess_type(f)
+      prototype = GuessType(f)
 
     if self.hooks is not None:
       ret = self.hooks.before_export_function(f, func_name)
@@ -504,7 +501,7 @@ class CBinaryToSourceExporter:
         return ret
 
     prototype2 = None
-    ti = idc.get_tinfo(f)
+    ti = GetTinfo(f)
     if ti:
       prototype2 = idc_print_type(ti[0],ti[1], func_name, PRTYPE_1LINE)
 
@@ -523,28 +520,28 @@ class CBinaryToSourceExporter:
     bb_relations = {}
 
     # Iterate through each basic block
-    ea = func.start_ea
+    ea = func.startEA
     flow = FlowChart(func)
     for block in flow:
-      block_ea = block.start_ea
-      if block.end_ea == 0 or block_ea == BADADDR:
+      block_ea = block.startEA
+      if block.endEA == 0 or block_ea == BADADDR:
         continue
 
       # ...and each instruction on each basic block
-      for ea in list(Heads(block.start_ea, block.end_ea)):
+      for ea in list(Heads(block.startEA, block.endEA)):
         # Remember the relationships
         bb_relations[block_ea] = []
 
         # Iterate the succesors of this basic block
         for succ_block in block.succs():
-          bb_relations[block_ea].append(succ_block.start_ea)
+          bb_relations[block_ea].append(succ_block.startEA)
 
         # Iterate the predecessors of this basic block
         for pred_block in block.preds():
           try:
-            bb_relations[pred_block.start_ea].append(block.start_ea)
+            bb_relations[pred_block.startEA].append(block.startEA)
           except KeyError:
-            bb_relations[pred_block.start_ea] = [block.start_ea]
+            bb_relations[pred_block.startEA] = [block.startEA]
 
         # Get the conditionals
         is_cond = is_conditional_branch_or_jump(ea)
@@ -563,14 +560,14 @@ class CBinaryToSourceExporter:
         # Get the calls
         xrefs = list(CodeRefsFrom(ea, 0))
         if len(xrefs) == 1:
-          tmp_func = get_func_name(xrefs[0])
+          tmp_func = GetFunctionName(xrefs[0])
           if tmp_func not in BANNED_FUNCTIONS and ".%s" % tmp_func not in BANNED_FUNCTIONS:
             func_obj = get_func(xrefs[0])
             if func_obj is not None:
-              if func_obj.start_ea != func.start_ea:
+              if func_obj.startEA != func.startEA:
                 tmp_ea = xrefs[0]
                 calls.add(tmp_ea)
-                name = get_func_name(tmp_ea)
+                name = GetFunctionName(tmp_ea)
                 try:
                   callees[name] += 1
                 except:
@@ -663,7 +660,7 @@ class CBinaryToSourceExporter:
 
   def get_function_from_dictionary(self, d):
     l = (d["ea"], d["name"], d["prototype"], d["prototype2"], d["conditions"],
-         d["constants"], d["constants_json"], d["loops"], d["switchs"],
+         d["constants"], d["constants_json"], d["loops"], d["switchs"], 
          d["switchs_json"], d["calls"], d["externals"], d["recursive"],
          d["indirects"], d["globals"], d["callees_json"])
     return l
@@ -677,12 +674,12 @@ class CBinaryToSourceExporter:
       for ea, func_name, str_data in d[full_path]:
         func = get_func(ea)
         if func:
-          cur.execute(sql, (full_path, source_file, str(func.start_ea),))
+          cur.execute(sql, (full_path, source_file, str(func.startEA),))
     cur.close()
 
   def save_guessed_function_names(self, strings):
     cur = self.db.cursor()
-    sql = "update functions set guessed_name = ?, all_guessed_names = ? where ea = ?"
+    sql = "update functions set guessed_name = ?, all_guessed_names = ? where ea = ?" 
     guesses = guess_function_names(strings)
     for guess in guesses:
       ea, _, best_candidate, candidates = guess
@@ -700,8 +697,8 @@ class CBinaryToSourceExporter:
       i = 0
       t = time.time()
 
-      start_ea = ida_ida.inf_get_min_ea()
-      end_ea   = ida_ida.inf_get_max_ea()
+      start_ea = MinEA()
+      end_ea   = MaxEA()
       if self.hooks is not None:
         start_ea, end_ea = self.hooks.get_export_range()
 
@@ -761,9 +758,10 @@ def main():
 
 if __name__ == "__main__":
   try:
-    ida_auto.auto_wait()
+    idaapi.autoWait()
     main()
     idaapi.qexit(0)
   except:
     log("ERROR: %s" % str(sys.exc_info()[1]))
     raise
+

@@ -1,5 +1,5 @@
 """
-IDA Python plugin for displaying matches between source codes and binaries as
+IDA Python plugin for displaying matches between source codes and binaries as 
 well as for diffing functions and importing symbols and definitions. Part of the
 Pigaios Project.
 
@@ -36,11 +36,10 @@ from pygments import highlight
 from pygments.formatters import HtmlFormatter
 from pygments.lexers import NasmLexer, CppLexer
 
-from idaapi import (Choose, PluginForm, Form, init_hexrays_plugin, load_plugin,
+from idaapi import (Choose2, PluginForm, Form, init_hexrays_plugin, load_plugin,
                     get_func, decompile, tag_remove, show_wait_box, info,
-                    hide_wait_box, replace_wait_box, ask_yn, reg_read_string,
+                    hide_wait_box, replace_wait_box, askyn_c, reg_read_string,
                     reg_write_string)
-import ida_kernwin
 
 import sourceimp_core
 
@@ -49,12 +48,12 @@ try:
 except NameError:  # Python 3
   from importlib import reload
 
-imp.reload(sourceimp_core)
+reload(sourceimp_core)
 
 from sourceimp_core import *
 
 import sourcexp_ida
-imp.reload(sourcexp_ida)
+reload(sourcexp_ida)
 
 from sourcexp_ida import log, CBinaryToSourceExporter, VERSION_VALUE
 
@@ -64,7 +63,7 @@ LITTLE_ORANGE = 0x026AFD
 
 #-------------------------------------------------------------------------------
 def log(msg):
-  ida_kernwin.msg("[%s] %s\n" % (time.asctime(), msg))
+  Message("[%s] %s\n" % (time.asctime(), msg))
   replace_wait_box(msg)
 
 #-------------------------------------------------------------------------------
@@ -260,7 +259,7 @@ class CHtmlDiff:
     return res
 
 #-------------------------------------------------------------------------------
-class CDiffChooser(Choose):
+class CDiffChooser(Choose2):
   def __init__(self, differ, title, matches, importer_obj):
     self.importer = importer_obj
     self.differ = differ
@@ -269,7 +268,7 @@ class CDiffChooser(Choose):
       self.columns.append(["FP?", 6])
       self.columns.append(["Reasons", 40])
 
-    Choose.__init__(self, title, columns, Choose.CH_MULTI)
+    Choose2.__init__(self, title, columns, Choose2.CH_MULTI)
     self.n = 0
     self.icon = -1
     self.selcount = 0
@@ -279,8 +278,8 @@ class CDiffChooser(Choose):
 
     for i, match in enumerate(matches):
       ea, name, heuristic, score, reason, ml, qr = matches[match]
-      bin_func_name = get_func_name(int(ea))
-      line = ["%03d" % i, "%05d" % match, name, "0x%08x" % int(ea), bin_func_name, str(score), str(ml), str((score + ml)/2), str(qr), heuristic, reason]
+      bin_func_name = GetFunctionName(long(ea))
+      line = ["%03d" % i, "%05d" % match, name, "0x%08x" % long(ea), bin_func_name, str(score), str(ml), str((score + ml)/2), str(qr), heuristic, reason]
       if _DEBUG:
         maybe_false_positive = int(seems_false_positive(name, bin_func_name))
         line.append(str(maybe_false_positive))
@@ -338,7 +337,7 @@ class CDiffChooser(Choose):
   def OnSelectLine(self, n):
     self.selcount += 1
     row = self.items[n]
-    ea = int(row[3], 16)
+    ea = long(row[3], 16)
     if isEnabled(ea):
       jumpto(ea)
 
@@ -369,7 +368,7 @@ class CDiffChooser(Choose):
         cdiffer.Show(src, title)
       cur.close()
     elif cmd_id == self.cmd_import_all:
-      if ask_yn(0, "HIDECANCEL\nDo you really want to import all matched functions as well as struct, union, enum and typedef definitions?") == 1:
+      if askyn_c(0, "HIDECANCEL\nDo you really want to import all matched functions as well as struct, union, enum and typedef definitions?") == 1:
         import_items = []
         for item in self.items:
           src_id, src_name, bin_ea = int(item[1]), item[2], int(item[3], 16)
@@ -377,20 +376,20 @@ class CDiffChooser(Choose):
 
         self.importer.import_items(import_items)
     elif cmd_id == self.cmd_import_selected:
-      if len(self.selected_items) == 1 or ask_yn(1, "HIDECANCEL\nDo you really want to import the selected functions?") == 1:
+      if len(self.selected_items) == 1 or askyn_c(1, "HIDECANCEL\nDo you really want to import the selected functions?") == 1:
         import_items = []
         for index in self.selected_items:
           item = self.items[index]
           src_id, src_name, bin_ea = int(item[1]), item[2], int(item[3], 16)
           import_items.append([src_id, src_name, bin_ea])
 
-        import_definitions = ask_yn(0, "HIDECANCEL\nDo you also want to import all struct, union, enum and typedef definitions?") == 1
+        import_definitions = askyn_c(0, "HIDECANCEL\nDo you also want to import all struct, union, enum and typedef definitions?") == 1
         self.importer.import_items(import_items, import_definitions = import_definitions)
     elif cmd_id == self.cmd_diff_c:
       html_diff = CHtmlDiff()
       item = self.items[n]
 
-      src_id = int(item[1])
+      src_id = long(item[1])
       cur = self.differ.db.cursor()
 
       sql = "select source from src.functions where id = ?"
@@ -401,7 +400,7 @@ class CDiffChooser(Choose):
         Warning("Cannot find the source function.")
         return False
 
-      ea = int(item[3], 16)
+      ea = long(item[3], 16)
       proto = self.differ.decompile_and_get(ea)
       if not proto:
         Warning("Cannot decompile function 0x%08x" % ea)
@@ -409,9 +408,9 @@ class CDiffChooser(Choose):
 
       buf1 = indent_source(row[0].decode("utf-8", "ignore"))
       buf2 = proto
-      buf2 += "\n".join(self.differ.pseudo[ea])
+      buf2 += u"\n".join(self.differ.pseudo[ea])
       new_buf = indent_source(buf2)
-      src = html_diff.make_file(new_buf.split("\n"), buf1.split("\n"))
+      src = html_diff.make_file(new_buf.split(u"\n"), buf1.split(u"\n"))
 
       title = "Diff pseudo-source %s - %s" % (item[2], item[4])
       cdiffer = CHtmlViewer()
@@ -422,7 +421,7 @@ class CIDABinaryToSourceImporter(CBinaryToSourceImporter):
   def __init__(self, project_script):
     self.hooks = None
     self.project_script = project_script
-    CBinaryToSourceImporter.__init__(self, get_idb_path())
+    CBinaryToSourceImporter.__init__(self, GetIdbPath())
 
     show_wait_box("Finding matches...")
     self.src_db = None
@@ -474,13 +473,13 @@ class CIDABinaryToSourceImporter(CBinaryToSourceImporter):
           msg  = "HIDECANCEL\nDatabase version (%s) is different to current version (%s).\n"
           msg += "Do you want to re-create the database?"
           msg += "\n\nNOTE: Selecting 'NO' will try to use the non updated database."
-          ret = ask_yn(0, msg % (version, VERSION_VALUE)) == 1
+          ret = askyn_c(0, msg % (version, VERSION_VALUE)) == 1
         elif status != "done":
           ret = True
         else:
           ret = False
     except:
-      print(("Error checking version: %s" % str(sys.exc_info()[1])))
+      print("Error checking version: %s" % str(sys.exc_info()[1]))
       ret = True
 
     cur.close()
@@ -568,7 +567,7 @@ class CIDABinaryToSourceImporter(CBinaryToSourceImporter):
     return "\n".join(self.pseudo[ea])
 
   def get_function_name(self, ea):
-    return get_func_name(ea)
+    return GetFunctionName(ea)
 
   def import_src(self, src_db):
     self.load_hooks()
@@ -608,7 +607,7 @@ class CIDABinaryToSourceImporter(CBinaryToSourceImporter):
       cur.close()
 
     for src_id, src_name, bin_ea in import_items:
-      bin_name = get_func_name(bin_ea)
+      bin_name = GetFunctionName(bin_ea)
       if is_ida_func(bin_name):
         MakeName(bin_ea, src_name)
         proto = self.get_source_field_name(src_id, "prototype")

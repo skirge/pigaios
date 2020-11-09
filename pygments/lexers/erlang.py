@@ -483,7 +483,7 @@ class ElixirConsoleLexer(Lexer):
         insertions = []
         for match in line_re.finditer(text):
             line = match.group()
-            if line.startswith('** '):
+            if line.startswith(u'** '):
                 in_error = True
                 insertions.append((len(curcode),
                                    [(0, Generic.Error, line[:-1])]))

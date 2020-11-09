@@ -511,7 +511,7 @@ PLPGSQL_KEYWORDS = (
 if __name__ == '__main__':  # pragma: no cover
     import re
     try:
-        from urllib.request import urlopen
+        from urllib import urlopen
     except ImportError:
         from urllib.request import urlopen
 

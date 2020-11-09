@@ -56,22 +56,22 @@ class PrologLexer(RegexLexer):
             (r'(mod|div|not)\b', Operator),
             (r'_', Keyword),  # The don't-care variable
             (r'([a-z]+)(:)', bygroups(Name.Namespace, Punctuation)),
-            ('([a-z\u00c0-\u1fff\u3040-\ud7ff\ue000-\uffef]'
-             '[\w$\u00c0-\u1fff\u3040-\ud7ff\ue000-\uffef]*)'
-             '(\\s*)(:-|-->)',
+            (u'([a-z\u00c0-\u1fff\u3040-\ud7ff\ue000-\uffef]'
+             u'[\w$\u00c0-\u1fff\u3040-\ud7ff\ue000-\uffef]*)'
+             u'(\\s*)(:-|-->)',
              bygroups(Name.Function, Text, Operator)),  # function defn
-            ('([a-z\u00c0-\u1fff\u3040-\ud7ff\ue000-\uffef]'
-             '[\w$\u00c0-\u1fff\u3040-\ud7ff\ue000-\uffef]*)'
-             '(\\s*)(\\()',
+            (u'([a-z\u00c0-\u1fff\u3040-\ud7ff\ue000-\uffef]'
+             u'[\w$\u00c0-\u1fff\u3040-\ud7ff\ue000-\uffef]*)'
+             u'(\\s*)(\\()',
              bygroups(Name.Function, Text, Punctuation)),
-            ('[a-z\u00c0-\u1fff\u3040-\ud7ff\ue000-\uffef]'
-             '[\w$\u00c0-\u1fff\u3040-\ud7ff\ue000-\uffef]*',
+            (u'[a-z\u00c0-\u1fff\u3040-\ud7ff\ue000-\uffef]'
+             u'[\w$\u00c0-\u1fff\u3040-\ud7ff\ue000-\uffef]*',
              String.Atom),  # atom, characters
             # This one includes !
-            ('[#&*+\\-./:<=>?@\\\\^~\u00a1-\u00bf\u2010-\u303f]+',
+            (u'[#&*+\\-./:<=>?@\\\\^~\u00a1-\u00bf\u2010-\u303f]+',
              String.Atom),  # atom, graphics
             (r'[A-Z_]\w*', Name.Variable),
-            ('\\s+|[\u2000-\u200f\ufff0-\ufffe\uffef]', Text),
+            (u'\\s+|[\u2000-\u200f\ufff0-\ufffe\uffef]', Text),
         ],
         'nested-comment': [
             (r'\*/', Comment.Multiline, '#pop'),

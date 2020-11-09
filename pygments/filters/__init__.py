@@ -229,9 +229,9 @@ class VisibleWhitespaceFilter(Filter):
 
     def __init__(self, **options):
         Filter.__init__(self, **options)
-        for name, default in [('spaces',   '·'),
-                              ('tabs',     '»'),
-                              ('newlines', '¶')]:
+        for name, default in [('spaces',   u'·'),
+                              ('tabs',     u'»'),
+                              ('newlines', u'¶')]:
             opt = options.get(name, False)
             if isinstance(opt, string_types) and len(opt) == 1:
                 setattr(self, name, opt)
@@ -246,9 +246,9 @@ class VisibleWhitespaceFilter(Filter):
 
     def filter(self, lexer, stream):
         if self.wstt:
-            spaces = self.spaces or ' '
-            tabs = self.tabs or '\t'
-            newlines = self.newlines or '\n'
+            spaces = self.spaces or u' '
+            tabs = self.tabs or u'\t'
+            newlines = self.newlines or u'\n'
             regex = re.compile(r'\s')
             def replacefunc(wschar):
                 if wschar == ' ':
@@ -298,7 +298,7 @@ class GobbleFilter(Filter):
         if left < len(value):
             return value[left:], 0
         else:
-            return '', left - len(value)
+            return u'', left - len(value)
 
     def filter(self, lexer, stream):
         n = self.n
@@ -309,7 +309,7 @@ class GobbleFilter(Filter):
             (parts[0], left) = self.gobble(parts[0], left)
             for i in range(1, len(parts)):
                 (parts[i], left) = self.gobble(parts[i], n)
-            value = '\n'.join(parts)
+            value = u'\n'.join(parts)
 
             if value != '':
                 yield ttype, value
