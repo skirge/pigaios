@@ -25,9 +25,9 @@ from threading import current_thread
 import clang.cindex
 from clang.cindex import Diagnostic, CursorKind, TokenKind
 
-from base_support import *
-from SimpleEval import simple_eval
-from simple_macro_parser import CMacroExtractor
+from .base_support import *
+from .SimpleEval import simple_eval
+from .simple_macro_parser import CMacroExtractor
 
 #-------------------------------------------------------------------------------
 CONDITIONAL_OPERATORS = ["==", "!=", "<", ">", ">=", "<=", "?"]
@@ -93,7 +93,7 @@ def dump_ast(cursor, level = 0):
   if token is not None:
     token = token.spelling
 
-  print("  "*level, cursor.kind, repr(cursor.spelling), repr(token), cursor.type.spelling, cursor.location)
+  print(("  "*level, cursor.kind, repr(cursor.spelling), repr(token), cursor.type.spelling, cursor.location))
   for children in cursor.get_children():
     dump_ast(children, level+1)
 
@@ -654,7 +654,7 @@ class CClangExporter(CBaseExporter):
           args = (obj.name, prototype, prototype2, obj.conditions,
                   len(obj.constants), json_dump(list(obj.constants)),
                   obj.loops, len(obj.switches), json_dump(list(obj.switches)),
-                  len(obj.calls.keys()), len(obj.externals),
+                  len(list(obj.calls.keys())), len(obj.externals),
                   filename, json_dump(obj.calls), source, obj.recursive,
                   len(obj.indirects), len(obj.globals_uses), obj.is_inlined,
                   obj.is_static, basename(filename).lower(), )
